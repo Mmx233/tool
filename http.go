@@ -130,8 +130,8 @@ func (a *httP) POST(url string, header map[string]interface{}, query map[string]
 }
 
 // Get 表单请求快捷方式
-func (a *httP) Get(url string,header map[string]interface{},query map[string]interface{},cookie map[string]string)(http.Header, map[string]interface{}, error) {
-	d,b,e:=a.GetReader(url,header,query,cookie)
+func (a *httP) Get(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (http.Header, map[string]interface{}, error) {
+	d, b, e := a.GetReader(url, header, query, cookie)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -143,10 +143,11 @@ func (a *httP) Get(url string,header map[string]interface{},query map[string]int
 	return d, c, nil
 }
 
-func (a httP) GetLocation(url string, header map[string]interface{}, query map[string]interface{},cookie map[string]string) (string,error) {
-	req ,e:= a.GenRequest("GET",url, header, query,nil,cookie)
-	if e!=nil {
-		return "",e
+// GetLocation 获取301/302目标地址
+func (a httP) GetLocation(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (string, error) {
+	req, e := a.GenRequest("GET", url, header, query, nil, cookie)
+	if e != nil {
+		return "", e
 	}
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -156,26 +157,27 @@ func (a httP) GetLocation(url string, header map[string]interface{}, query map[s
 
 	resp, e := client.Do(req)
 	if e != nil {
-		return "",e
+		return "", e
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(resp.Body)
 
-	return resp.Header.Get("Location"),nil
+	return resp.Header.Get("Location"), nil
 }
 
-func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{},cookie map[string]string) (*goquery.Document,error) {
-	_,resp,e := a.defaultReader("GET",url,header,query,nil,cookie)
-	if e!=nil {
-		return nil,e
+// GetGoquery 获取goquery
+func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (*goquery.Document, error) {
+	_, resp, e := a.defaultReader("GET", url, header, query, nil, cookie)
+	if e != nil {
+		return nil, e
 	}
 	defer func(resp io.ReadCloser) {
 		_ = resp.Close()
 	}(resp)
 	d, e := goquery.NewDocumentFromReader(resp)
 	if e != nil {
-		return nil,e
+		return nil, e
 	}
-	return d,nil
+	return d, nil
 }
