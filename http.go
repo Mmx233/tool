@@ -78,7 +78,8 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 		return nil, nil, err
 	}
 
-	var client = http.DefaultClient
+	var client = *http.DefaultClient
+
 	if !redirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -153,14 +154,9 @@ func (a httP) DefaultGoquery(Type string, url string, header map[string]interfac
 	if e != nil {
 		return nil, e
 	}
-	defer func(resp io.ReadCloser) {
-		_ = resp.Close()
-	}(resp)
 	d, e := goquery.NewDocumentFromReader(resp)
-	if e != nil {
-		return nil, e
-	}
-	return d, nil
+	_ = resp.Close()
+	return d, e
 }
 
 func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (*goquery.Document, error) {
