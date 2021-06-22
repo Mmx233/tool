@@ -73,8 +73,8 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	return req, nil
 }
 
-//执行请求获得io reader的默认流程
-func (a *httP) defaultReader(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookies map[string]string) (http.Header, io.ReadCloser, error) {
+// DefaultReader 执行请求获得io reader的默认流程
+func (a *httP) DefaultReader(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookies map[string]string) (http.Header, io.ReadCloser, error) {
 	req, err := a.GenRequest(Type, url, header, query, body, cookies)
 	if err != nil {
 		return nil, nil, err
@@ -89,12 +89,12 @@ func (a *httP) defaultReader(Type string, url string, header map[string]interfac
 
 // GetReader 执行GET请求，获得io reader
 func (a *httP) GetReader(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (http.Header, io.ReadCloser, error) {
-	return a.defaultReader("GET", url, header, query, nil, cookie)
+	return a.DefaultReader("GET", url, header, query, nil, cookie)
 }
 
 // PostReader 执行POST请求，获得io reader
 func (a *httP) PostReader(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string) (http.Header, io.ReadCloser, error) {
-	return a.defaultReader("POST", url, header, query, body, cookie)
+	return a.DefaultReader("POST", url, header, query, body, cookie)
 }
 
 // DecodeResBodyToMap 读取io reader中返回的json写入map
@@ -166,9 +166,8 @@ func (a httP) GetLocation(url string, header map[string]interface{}, query map[s
 	return resp.Header.Get("Location"), nil
 }
 
-// GetGoquery 获取goquery
-func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (*goquery.Document, error) {
-	_, resp, e := a.defaultReader("GET", url, header, query, nil, cookie)
+func (a httP) DefaultGoquery(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string) (*goquery.Document, error) {
+	_, resp, e := a.DefaultReader(Type, url, header, query, body, cookie)
 	if e != nil {
 		return nil, e
 	}
@@ -180,4 +179,12 @@ func (a httP) GetGoquery(url string, header map[string]interface{}, query map[st
 		return nil, e
 	}
 	return d, nil
+}
+
+func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string) (*goquery.Document, error) {
+	return a.DefaultGoquery("GET", url, header, query, nil, cookie)
+}
+
+func (a httP) PostGoquery(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string) (*goquery.Document, error) {
+	return a.DefaultGoquery("POST", url, header, query, body, cookie)
 }
