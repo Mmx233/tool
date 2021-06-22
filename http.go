@@ -39,7 +39,9 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 		if header == nil {
 			header = make(map[string]interface{}, 1)
 		}
-		header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+		if _, ok := header["Content-Type"]; !ok {
+			header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+		}
 	}
 
 	req, err := http.NewRequest(Type, url, strings.NewReader(form))
