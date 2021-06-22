@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	url2 "net/url"
 	"strings"
 )
@@ -73,9 +74,9 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 
 // DefaultReader 执行请求获得io reader的默认流程
 func (a *httP) DefaultReader(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookies map[string]string, redirect bool) (http.Header, io.ReadCloser, error) {
-	req, err := a.GenRequest(Type, url, header, query, body, cookies)
-	if err != nil {
-		return nil, nil, err
+	req, e := a.GenRequest(Type, url, header, query, body, cookies)
+	if e != nil {
+		return nil, nil, e
 	}
 
 	var client = *http.DefaultClient
@@ -84,6 +85,12 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
+	} else {
+		jar, e := cookiejar.New(nil)
+		if e != nil {
+			return nil, nil, e
+		}
+		client.Jar = jar
 	}
 
 	resp, err := client.Do(req)
