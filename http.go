@@ -12,17 +12,12 @@ import (
 )
 
 type httP struct { //HTTP操作工具包
-	defaultHeader map[string]string //默认爬虫header
+	DefaultHeader map[string]string //默认爬虫header
 }
 
 var HTTP = httP{
-	defaultHeader: map[string]string{
-		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-		"Accept-Encoding": "gzip, deflate",
-		"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
-		"Cache-Control":   "max-age=0",
-		"Connection":      "keep-alive",
-		"User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+	DefaultHeader: map[string]string{
+		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
 	},
 }
 
@@ -51,7 +46,7 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	}
 
 	//请求头
-	for k, v := range a.defaultHeader {
+	for k, v := range a.DefaultHeader {
 		req.Header.Add(k, v)
 	}
 	for k, v := range header {
