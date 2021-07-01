@@ -97,6 +97,13 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if redirect {
+		for _, v := range resp.Cookies() {
+			cookies[v.Name] = v.Value
+		}
+	}
+
 	return resp.Header, resp.Body, nil
 }
 
