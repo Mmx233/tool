@@ -91,12 +91,14 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 			return nil, nil, e
 		}
 		client.Jar = jar
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			u, _ := url2.Parse(url)
-			for _, v := range jar.Cookies(u) {
-				cookies[v.Name] = v.Value
+		if cookies != nil {
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				u, _ := url2.Parse(url)
+				for _, v := range jar.Cookies(u) {
+					cookies[v.Name] = v.Value
+				}
+				return nil
 			}
-			return nil
 		}
 	}
 
