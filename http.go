@@ -12,8 +12,13 @@ import (
 	"strings"
 )
 
+type HttpOptions struct {
+	RedirectCookieJar bool
+}
+
 type httP struct { //HTTP操作工具包
 	DefaultHeader map[string]string //默认爬虫header
+	Options       HttpOptions
 }
 
 var HTTP = httP{
@@ -85,7 +90,7 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
-	} else {
+	} else if a.Options.RedirectCookieJar {
 		jar, e := cookiejar.New(nil)
 		if e != nil {
 			return nil, nil, e
