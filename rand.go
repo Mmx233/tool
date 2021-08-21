@@ -11,13 +11,14 @@ var Rand ranD
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+1234567890")
 
-// RandNum [min,max]
-func (*ranD) RandNum(Min int, Max int) int {
+// Num [min,max]
+func (*ranD) Num(Min int, Max int) int {
 	rand.Seed(time.Now().UnixNano())
+	time.Sleep(time.Nanosecond)
 	return Min + rand.Intn(Max-Min+1)
 }
 
-func (*ranD) RandString(Len int) string {
+func (*ranD) String(Len int) string {
 	b := make([]rune, Len)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
