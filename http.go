@@ -125,12 +125,24 @@ func (a *httP) PostReader(url string, header map[string]interface{}, query map[s
 	return a.DefaultReader("POST", url, header, query, body, cookie, redirect)
 }
 
+func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
+	defer func() {
+		_ = i.Close()
+	}()
+	return ioutil.ReadAll(i)
+}
+
+func (a *httP) ReadResBodyToString(i io.ReadCloser) (string, error) {
+	d, e := a.ReadResBodyToByte(i)
+	return string(d), e
+}
+
 // DecodeResBodyToMap 读取io reader中返回的json写入map
 func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, error) {
 	var t map[string]interface{}
 
 	//读取
-	data, err := ioutil.ReadAll(i)
+	data, err := a.ReadResBodyToByte(i)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +162,6 @@ func (a *httP) POST(url string, header map[string]interface{}, query map[string]
 		return nil, nil, e
 	}
 	c, e := a.DecodeResBodyToMap(b)
-	_ = b.Close()
 	if e != nil {
 		return nil, nil, e
 	}
@@ -164,7 +175,6 @@ func (a *httP) Get(url string, header map[string]interface{}, query map[string]i
 		return nil, nil, e
 	}
 	c, e := a.DecodeResBodyToMap(b)
-	_ = b.Close()
 	if e != nil {
 		return nil, nil, e
 	}
