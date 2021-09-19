@@ -12,6 +12,23 @@ import (
 	"strings"
 )
 
+type GetRequest struct {
+	Url      string
+	Header   map[string]interface{}
+	Query    map[string]interface{}
+	Cookie   map[string]string
+	Redirect bool
+}
+
+type PostRequest struct {
+	Url      string
+	Header   map[string]interface{}
+	Query    map[string]interface{}
+	Body     map[string]interface{}
+	Cookie   map[string]string
+	Redirect bool
+}
+
 type HttpOptions struct {
 	RedirectCookieJar bool
 }
@@ -115,14 +132,14 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 	return resp.Header, resp.Body, nil
 }
 
-// GetReader 执行GET请求，获得io reader
-func (a *httP) GetReader(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader("GET", url, header, query, nil, cookie, redirect)
+// PostReader 执行POST请求，获得io reader
+func (a *httP) PostReader(r *PostRequest) (http.Header, io.ReadCloser, error) {
+	return a.DefaultReader("POST", r.Url, r.Header, r.Query, r.Body, r.Cookie, r.Redirect)
 }
 
-// PostReader 执行POST请求，获得io reader
-func (a *httP) PostReader(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader("POST", url, header, query, body, cookie, redirect)
+// GetReader 执行GET请求，获得io reader
+func (a *httP) GetReader(r *GetRequest) (http.Header, io.ReadCloser, error) {
+	return a.DefaultReader("GET", r.Url, r.Header, r.Query, nil, r.Cookie, r.Redirect)
 }
 
 func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
@@ -156,65 +173,59 @@ func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, erro
 }
 
 // Post 表单请求快捷方式
-func (a *httP) Post(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, map[string]interface{}, error) {
-	d, b, e := a.PostReader(url, header, query, body, cookie, redirect)
+func (a *httP) Post(r *PostRequest) (http.Header, map[string]interface{}, error) {
+	d, b, e := a.PostReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
 	c, e := a.DecodeResBodyToMap(b)
-	if e != nil {
-		return nil, nil, e
-	}
 	return d, c, nil
 }
 
 // Get 表单请求快捷方式
-func (a *httP) Get(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, map[string]interface{}, error) {
-	d, b, e := a.GetReader(url, header, query, cookie, redirect)
+func (a *httP) Get(r *GetRequest) (http.Header, map[string]interface{}, error) {
+	d, b, e := a.GetReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
 	c, e := a.DecodeResBodyToMap(b)
-	if e != nil {
-		return nil, nil, e
-	}
 	return d, c, nil
 }
 
-func (a *httP) PostBytes(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, []byte, error) {
-	h, i, e := a.PostReader(url, header, query, body, cookie, redirect)
+func (a *httP) PostBytes(r *PostRequest) (http.Header, []byte, error) {
+	d, b, e := a.PostReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	r, e := a.ReadResBodyToByte(i)
-	return h, r, e
+	c, e := a.ReadResBodyToByte(b)
+	return d, c, nil
 }
 
-func (a *httP) GetBytes(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, []byte, error) {
-	h, i, e := a.GetReader(url, header, query, cookie, redirect)
+func (a *httP) GetBytes(r *GetRequest) (http.Header, []byte, error) {
+	d, b, e := a.GetReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	r, e := a.ReadResBodyToByte(i)
-	return h, r, e
+	c, e := a.ReadResBodyToByte(b)
+	return d, c, nil
 }
 
-func (a *httP) PostString(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, string, error) {
-	h, i, e := a.PostReader(url, header, query, body, cookie, redirect)
+func (a *httP) PostString(r *PostRequest) (http.Header, string, error) {
+	d, b, e := a.PostReader(r)
 	if e != nil {
 		return nil, "", e
 	}
-	r, e := a.ReadResBodyToString(i)
-	return h, r, e
+	c, e := a.ReadResBodyToString(b)
+	return d, c, nil
 }
 
-func (a *httP) GetString(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (http.Header, string, error) {
-	h, i, e := a.GetReader(url, header, query, cookie, redirect)
+func (a *httP) GetString(r *GetRequest) (http.Header, string, error) {
+	d, b, e := a.GetReader(r)
 	if e != nil {
 		return nil, "", e
 	}
-	r, e := a.ReadResBodyToString(i)
-	return h, r, e
+	c, e := a.ReadResBodyToString(b)
+	return d, c, nil
 }
 
 func (a httP) DefaultGoquery(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (*goquery.Document, error) {
@@ -227,10 +238,10 @@ func (a httP) DefaultGoquery(Type string, url string, header map[string]interfac
 	return d, e
 }
 
-func (a httP) GetGoquery(url string, header map[string]interface{}, query map[string]interface{}, cookie map[string]string, redirect bool) (*goquery.Document, error) {
-	return a.DefaultGoquery("GET", url, header, query, nil, cookie, redirect)
+func (a httP) GetGoquery(r *GetRequest) (*goquery.Document, error) {
+	return a.DefaultGoquery("GET", r.Url, r.Header, r.Query, nil, r.Cookie, r.Redirect)
 }
 
-func (a httP) PostGoquery(url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (*goquery.Document, error) {
-	return a.DefaultGoquery("POST", url, header, query, body, cookie, redirect)
+func (a httP) PostGoquery(r *PostRequest) (*goquery.Document, error) {
+	return a.DefaultGoquery("POST", r.Url, r.Header, r.Query, r.Body, r.Cookie, r.Redirect)
 }
