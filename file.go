@@ -1,9 +1,11 @@
 package tool
 
 import (
+	"bufio"
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -57,4 +59,27 @@ func (a *file) Mkdir(path string) error {
 func (a *file) DecodeName(name string) (string, string) {
 	t := strings.Split(name, ".")
 	return strings.Join(t[:len(t)-1], ""), "." + t[len(t)-1]
+}
+
+func (a *file) Add(path string, c string, perm os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, perm)
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(f)
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriter(f)
+	if _, err = w.WriteString(c + "\n"); err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
+func (*file) GetRootPath() (string, error) {
+	t, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Dir(t) + "/", nil
 }
