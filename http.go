@@ -6,10 +6,12 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	url2 "net/url"
 	"strings"
+	"time"
 )
 
 type GetRequest struct {
@@ -31,6 +33,7 @@ type PostRequest struct {
 
 type HttpOptions struct {
 	RedirectCookieJar bool
+	Timeout           time.Duration
 }
 
 type httP struct { //HTTP操作工具包
@@ -101,7 +104,13 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 		return nil, nil, e
 	}
 
-	var client = *http.DefaultClient
+	var client = &http.Client{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: HTTP.Options.Timeout,
+			}).DialContext,
+		},
+	}
 
 	if !redirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
