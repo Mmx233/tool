@@ -9,11 +9,20 @@ import (
 	"strings"
 )
 
-type file struct{}
+type fileOptions struct {
+	ForceRoot bool
+}
+
+type file struct {
+	Options fileOptions
+}
 
 var File file
 
 func (a *file) Exists(path string) bool {
+	if e := a.addRoot(&path); e != nil {
+		return false
+	}
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsExist(err) {
@@ -25,10 +34,16 @@ func (a *file) Exists(path string) bool {
 }
 
 func (a *file) Read(path string) ([]byte, error) {
+	if e := a.addRoot(&path); e != nil {
+		return nil, e
+	}
 	return ioutil.ReadFile(path)
 }
 
 func (a *file) ReadJson(path string, receiver interface{}) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	data, err := a.Read(path)
 	if err != nil {
 		return err
@@ -37,10 +52,16 @@ func (a *file) ReadJson(path string, receiver interface{}) error {
 }
 
 func (a *file) Write(path string, data []byte) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	return ioutil.WriteFile(path, data, 700)
 }
 
 func (a *file) WriteJson(path string, receiver interface{}) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	data, err := json.MarshalIndent(receiver, "", " ")
 	if err != nil {
 		return err
@@ -49,10 +70,16 @@ func (a *file) WriteJson(path string, receiver interface{}) error {
 }
 
 func (a *file) Remove(path string) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	return os.RemoveAll(path)
 }
 
 func (a *file) Mkdir(path string) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	return os.MkdirAll(path, 0700)
 }
 
@@ -62,6 +89,9 @@ func (a *file) DecodeName(name string) (string, string) {
 }
 
 func (a *file) Add(path string, c string, perm os.FileMode) error {
+	if e := a.addRoot(&path); e != nil {
+		return e
+	}
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, perm)
 	defer func(file *os.File) {
 		_ = file.Close()
@@ -82,4 +112,15 @@ func (*file) GetRootPath() (string, error) {
 		return "", err
 	}
 	return filepath.Dir(t) + "/", nil
+}
+
+func (a *file) addRoot(path *string) error {
+	if a.Options.ForceRoot {
+		root, e := a.GetRootPath()
+		if e != nil {
+			return e
+		}
+		*path = root + *path
+	}
+	return nil
 }
