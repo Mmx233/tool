@@ -41,9 +41,6 @@ func (a *file) Read(path string) ([]byte, error) {
 }
 
 func (a *file) ReadJson(path string, receiver interface{}) error {
-	if e := a.addRoot(&path); e != nil {
-		return e
-	}
 	data, err := a.Read(path)
 	if err != nil {
 		return err
@@ -59,9 +56,6 @@ func (a *file) Write(path string, data []byte) error {
 }
 
 func (a *file) WriteJson(path string, receiver interface{}) error {
-	if e := a.addRoot(&path); e != nil {
-		return e
-	}
 	data, err := json.MarshalIndent(receiver, "", " ")
 	if err != nil {
 		return err
