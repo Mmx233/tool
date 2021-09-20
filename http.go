@@ -14,6 +14,16 @@ import (
 	"time"
 )
 
+type FullRequest struct {
+	Type     string
+	Url      string
+	Header   map[string]interface{}
+	Query    map[string]interface{}
+	Body     map[string]interface{}
+	Cookie   map[string]string
+	Redirect bool
+}
+
 type GetRequest struct {
 	Url      string
 	Header   map[string]interface{}
@@ -98,8 +108,8 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 }
 
 // DefaultReader 执行请求获得io reader的默认流程
-func (a *httP) DefaultReader(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookies map[string]string, redirect bool) (http.Header, io.ReadCloser, error) {
-	req, e := a.GenRequest(Type, url, header, query, body, cookies)
+func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error) {
+	req, e := a.GenRequest(r.Type, r.Url, r.Header, r.Query, r.Body, r.Cookie)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -112,7 +122,7 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 		},
 	}
 
-	if !redirect {
+	if !r.Redirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
@@ -122,11 +132,11 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 			return nil, nil, e
 		}
 		client.Jar = jar
-		if cookies != nil {
+		if r.Cookie != nil {
 			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				u, _ := url2.Parse(url)
+				u, _ := url2.Parse(r.Url)
 				for _, v := range jar.Cookies(u) {
-					cookies[v.Name] = v.Value
+					r.Cookie[v.Name] = v.Value
 				}
 				return nil
 			}
@@ -143,12 +153,27 @@ func (a *httP) DefaultReader(Type string, url string, header map[string]interfac
 
 // PostReader 执行POST请求，获得io reader
 func (a *httP) PostReader(r *PostRequest) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader("POST", r.Url, r.Header, r.Query, r.Body, r.Cookie, r.Redirect)
+	return a.DefaultReader(&FullRequest{
+		Type:     "POST",
+		Url:      r.Url,
+		Header:   r.Header,
+		Query:    r.Query,
+		Body:     r.Body,
+		Cookie:   r.Cookie,
+		Redirect: r.Redirect,
+	})
 }
 
 // GetReader 执行GET请求，获得io reader
 func (a *httP) GetReader(r *GetRequest) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader("GET", r.Url, r.Header, r.Query, nil, r.Cookie, r.Redirect)
+	return a.DefaultReader(&FullRequest{
+		Type:     "GET",
+		Url:      r.Url,
+		Header:   r.Header,
+		Query:    r.Query,
+		Cookie:   r.Cookie,
+		Redirect: r.Redirect,
+	})
 }
 
 func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
@@ -237,8 +262,8 @@ func (a *httP) GetString(r *GetRequest) (http.Header, string, error) {
 	return d, c, nil
 }
 
-func (a httP) DefaultGoquery(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookie map[string]string, redirect bool) (*goquery.Document, error) {
-	_, resp, e := a.DefaultReader(Type, url, header, query, body, cookie, redirect)
+func (a httP) DefaultGoquery(r *FullRequest) (*goquery.Document, error) {
+	_, resp, e := a.DefaultReader(r)
 	if e != nil {
 		return nil, e
 	}
@@ -248,9 +273,24 @@ func (a httP) DefaultGoquery(Type string, url string, header map[string]interfac
 }
 
 func (a httP) GetGoquery(r *GetRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery("GET", r.Url, r.Header, r.Query, nil, r.Cookie, r.Redirect)
+	return a.DefaultGoquery(&FullRequest{
+		Type:     "GET",
+		Url:      r.Url,
+		Header:   r.Header,
+		Query:    r.Query,
+		Cookie:   r.Cookie,
+		Redirect: r.Redirect,
+	})
 }
 
 func (a httP) PostGoquery(r *PostRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery("POST", r.Url, r.Header, r.Query, r.Body, r.Cookie, r.Redirect)
+	return a.DefaultGoquery(&FullRequest{
+		Type:     "POST",
+		Url:      r.Url,
+		Header:   r.Header,
+		Query:    r.Query,
+		Body:     r.Body,
+		Cookie:   r.Cookie,
+		Redirect: r.Redirect,
+	})
 }
