@@ -63,9 +63,9 @@ func (*httP) fillFullReq(Type string, s interface{}) *FullRequest {
 	var r = FullRequest{
 		Type: Type,
 	}
-	v2 := reflect.ValueOf(r)
-	t := reflect.TypeOf(s).Elem().Elem()
-	v := reflect.ValueOf(s).Elem().Elem()
+	v2 := reflect.ValueOf(&r).Elem()
+	t := reflect.TypeOf(s).Elem()
+	v := reflect.ValueOf(s).Elem()
 	for i := 0; i < v.NumField(); i++ {
 		v2.FieldByName(t.Field(i).Name).Set(v.Field(i))
 	}
