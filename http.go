@@ -15,40 +15,40 @@ import (
 )
 
 type FullRequest struct {
-	Type     string
-	Url      string
-	Header   map[string]interface{}
-	Query    map[string]interface{}
-	Body     map[string]interface{}
-	Cookie   map[string]string
-	Redirect bool
+	Type              string
+	Url               string
+	Header            map[string]interface{}
+	Query             map[string]interface{}
+	Body              map[string]interface{}
+	Cookie            map[string]string
+	Redirect          bool
+	RedirectCookieJar bool
+	Timeout           time.Duration
 }
 
 type GetRequest struct {
-	Url      string
-	Header   map[string]interface{}
-	Query    map[string]interface{}
-	Cookie   map[string]string
-	Redirect bool
+	Url               string
+	Header            map[string]interface{}
+	Query             map[string]interface{}
+	Cookie            map[string]string
+	Redirect          bool
+	RedirectCookieJar bool
+	Timeout           time.Duration
 }
 
 type PostRequest struct {
-	Url      string
-	Header   map[string]interface{}
-	Query    map[string]interface{}
-	Body     map[string]interface{}
-	Cookie   map[string]string
-	Redirect bool
-}
-
-type HttpOptions struct {
+	Url               string
+	Header            map[string]interface{}
+	Query             map[string]interface{}
+	Body              map[string]interface{}
+	Cookie            map[string]string
+	Redirect          bool
 	RedirectCookieJar bool
 	Timeout           time.Duration
 }
 
 type httP struct { //HTTP操作工具包
 	DefaultHeader map[string]string //默认爬虫header
-	Options       HttpOptions
 }
 
 var HTTP = httP{
@@ -117,7 +117,7 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 	var client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout: HTTP.Options.Timeout,
+				Timeout: r.Timeout,
 			}).DialContext,
 		},
 	}
@@ -126,7 +126,7 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
-	} else if a.Options.RedirectCookieJar {
+	} else if r.RedirectCookieJar {
 		jar, e := cookiejar.New(nil)
 		if e != nil {
 			return nil, nil, e
@@ -154,25 +154,29 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 // PostReader 执行POST请求，获得io reader
 func (a *httP) PostReader(r *PostRequest) (http.Header, io.ReadCloser, error) {
 	return a.DefaultReader(&FullRequest{
-		Type:     "POST",
-		Url:      r.Url,
-		Header:   r.Header,
-		Query:    r.Query,
-		Body:     r.Body,
-		Cookie:   r.Cookie,
-		Redirect: r.Redirect,
+		Type:              "POST",
+		Url:               r.Url,
+		Header:            r.Header,
+		Query:             r.Query,
+		Body:              r.Body,
+		Cookie:            r.Cookie,
+		Redirect:          r.Redirect,
+		RedirectCookieJar: r.RedirectCookieJar,
+		Timeout:           r.Timeout,
 	})
 }
 
 // GetReader 执行GET请求，获得io reader
 func (a *httP) GetReader(r *GetRequest) (http.Header, io.ReadCloser, error) {
 	return a.DefaultReader(&FullRequest{
-		Type:     "GET",
-		Url:      r.Url,
-		Header:   r.Header,
-		Query:    r.Query,
-		Cookie:   r.Cookie,
-		Redirect: r.Redirect,
+		Type:              "GET",
+		Url:               r.Url,
+		Header:            r.Header,
+		Query:             r.Query,
+		Cookie:            r.Cookie,
+		Redirect:          r.Redirect,
+		RedirectCookieJar: r.RedirectCookieJar,
+		Timeout:           r.Timeout,
 	})
 }
 
@@ -274,23 +278,27 @@ func (a httP) DefaultGoquery(r *FullRequest) (*goquery.Document, error) {
 
 func (a httP) GetGoquery(r *GetRequest) (*goquery.Document, error) {
 	return a.DefaultGoquery(&FullRequest{
-		Type:     "GET",
-		Url:      r.Url,
-		Header:   r.Header,
-		Query:    r.Query,
-		Cookie:   r.Cookie,
-		Redirect: r.Redirect,
+		Type:              "GET",
+		Url:               r.Url,
+		Header:            r.Header,
+		Query:             r.Query,
+		Cookie:            r.Cookie,
+		Redirect:          r.Redirect,
+		RedirectCookieJar: r.RedirectCookieJar,
+		Timeout:           r.Timeout,
 	})
 }
 
 func (a httP) PostGoquery(r *PostRequest) (*goquery.Document, error) {
 	return a.DefaultGoquery(&FullRequest{
-		Type:     "POST",
-		Url:      r.Url,
-		Header:   r.Header,
-		Query:    r.Query,
-		Body:     r.Body,
-		Cookie:   r.Cookie,
-		Redirect: r.Redirect,
+		Type:              "POST",
+		Url:               r.Url,
+		Header:            r.Header,
+		Query:             r.Query,
+		Body:              r.Body,
+		Cookie:            r.Cookie,
+		Redirect:          r.Redirect,
+		RedirectCookieJar: r.RedirectCookieJar,
+		Timeout:           r.Timeout,
 	})
 }
