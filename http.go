@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	url2 "net/url"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -55,6 +56,20 @@ var HTTP = httP{
 	DefaultHeader: map[string]string{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
 	},
+}
+
+// 接收指针
+func (*httP) fillFullReq(Type string, s interface{}) *FullRequest {
+	var r = FullRequest{
+		Type: Type,
+	}
+	v2 := reflect.ValueOf(r)
+	t := reflect.TypeOf(s).Elem().Elem()
+	v := reflect.ValueOf(s).Elem().Elem()
+	for i := 0; i < v.NumField(); i++ {
+		v2.FieldByName(t.Field(i).Name).Set(v.Field(i))
+	}
+	return &r
 }
 
 // GenRequest 生成请求 底层函数
@@ -153,31 +168,12 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 
 // PostReader 执行POST请求，获得io reader
 func (a *httP) PostReader(r *PostRequest) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader(&FullRequest{
-		Type:              "POST",
-		Url:               r.Url,
-		Header:            r.Header,
-		Query:             r.Query,
-		Body:              r.Body,
-		Cookie:            r.Cookie,
-		Redirect:          r.Redirect,
-		RedirectCookieJar: r.RedirectCookieJar,
-		Timeout:           r.Timeout,
-	})
+	return a.DefaultReader(a.fillFullReq("POST", r))
 }
 
 // GetReader 执行GET请求，获得io reader
 func (a *httP) GetReader(r *GetRequest) (http.Header, io.ReadCloser, error) {
-	return a.DefaultReader(&FullRequest{
-		Type:              "GET",
-		Url:               r.Url,
-		Header:            r.Header,
-		Query:             r.Query,
-		Cookie:            r.Cookie,
-		Redirect:          r.Redirect,
-		RedirectCookieJar: r.RedirectCookieJar,
-		Timeout:           r.Timeout,
-	})
+	return a.DefaultReader(a.fillFullReq("GET", r))
 }
 
 func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
@@ -277,28 +273,9 @@ func (a httP) DefaultGoquery(r *FullRequest) (*goquery.Document, error) {
 }
 
 func (a httP) GetGoquery(r *GetRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery(&FullRequest{
-		Type:              "GET",
-		Url:               r.Url,
-		Header:            r.Header,
-		Query:             r.Query,
-		Cookie:            r.Cookie,
-		Redirect:          r.Redirect,
-		RedirectCookieJar: r.RedirectCookieJar,
-		Timeout:           r.Timeout,
-	})
+	return a.DefaultGoquery(a.fillFullReq("GET", r))
 }
 
 func (a httP) PostGoquery(r *PostRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery(&FullRequest{
-		Type:              "POST",
-		Url:               r.Url,
-		Header:            r.Header,
-		Query:             r.Query,
-		Body:              r.Body,
-		Cookie:            r.Cookie,
-		Redirect:          r.Redirect,
-		RedirectCookieJar: r.RedirectCookieJar,
-		Timeout:           r.Timeout,
-	})
+	return a.DefaultGoquery(a.fillFullReq("POST", r))
 }
