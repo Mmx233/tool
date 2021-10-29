@@ -77,17 +77,25 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	//表单
 	var form string
 	if body != nil {
-		var data = make(url2.Values)
-		for k, v := range body {
-			data[k] = []string{fmt.Sprint(v)}
-		}
-		form = data.Encode()
-
 		if _, ok := header["Content-Type"]; !ok {
 			if header == nil {
 				header = make(map[string]interface{}, 1)
 			}
 			header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+		}
+		switch {
+		case strings.Contains(header["Content-Type"].(string), "x-www-form-urlencoded"):
+			var data = make(url2.Values)
+			for k, v := range body {
+				data[k] = []string{fmt.Sprint(v)}
+			}
+			form = data.Encode()
+		case strings.Contains(header["Content-Type"].(string), "json"):
+			s, e := json.Marshal(body)
+			if e != nil {
+				return nil, e
+			}
+			form = string(s)
 		}
 	}
 
