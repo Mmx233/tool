@@ -9,7 +9,7 @@ type ranD struct{}
 
 var Rand ranD
 
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+1234567890")
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
 
 // Num [min,max]
 func (*ranD) Num(Min int, Max int) int {
