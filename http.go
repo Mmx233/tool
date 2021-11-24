@@ -142,6 +142,7 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 			DialContext: (&net.Dialer{
 				Timeout: r.Timeout,
 			}).DialContext,
+			TLSHandshakeTimeout: r.Timeout,
 		},
 	}
 
