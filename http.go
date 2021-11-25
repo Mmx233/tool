@@ -137,6 +137,9 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 		return nil, nil, e
 	}
 
+	if r.Timeout == 0 {
+		r.Timeout = 30
+	}
 	var client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
