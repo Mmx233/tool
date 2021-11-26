@@ -138,7 +138,7 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 	}
 
 	if r.Timeout == 0 {
-		r.Timeout = 30
+		r.Timeout = 30 * time.Second
 	}
 	var client = &http.Client{
 		Transport: &http.Transport{
