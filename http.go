@@ -25,6 +25,7 @@ type FullRequest struct {
 	Redirect          bool
 	RedirectCookieJar bool
 	Timeout           time.Duration
+	LocalAddr         net.Addr
 }
 
 type GetRequest struct {
@@ -35,6 +36,7 @@ type GetRequest struct {
 	Redirect          bool
 	RedirectCookieJar bool
 	Timeout           time.Duration
+	LocalAddr         net.Addr
 }
 
 type PostRequest struct {
@@ -46,6 +48,7 @@ type PostRequest struct {
 	Redirect          bool
 	RedirectCookieJar bool
 	Timeout           time.Duration
+	LocalAddr         net.Addr
 }
 
 type httP struct { //HTTP操作工具包
@@ -143,7 +146,8 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 	var client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout: r.Timeout,
+				Timeout:   r.Timeout,
+				LocalAddr: r.LocalAddr,
 			}).DialContext,
 			TLSHandshakeTimeout: r.Timeout,
 		},
