@@ -58,7 +58,7 @@ func (a *file) Mkdir(path string) error {
 
 func (a *file) DecodeName(name string) (string, string) {
 	t := strings.Split(name, ".")
-	return strings.Join(t[:len(t)-1], ""), "." + t[len(t)-1]
+	return strings.Join(t[:len(t)-1], ""), t[len(t)-1]
 }
 
 func (a *file) Add(path string, c string, perm os.FileMode) error {
