@@ -52,11 +52,11 @@ type PostRequest struct {
 }
 
 type httP struct { //HTTP操作工具包
-	DefaultHeader map[string]string //默认爬虫header
+	DefaultHeader map[string]interface{} //默认爬虫header
 }
 
 var HTTP = httP{
-	DefaultHeader: map[string]string{
+	DefaultHeader: map[string]interface{}{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
 	},
 }
@@ -108,9 +108,16 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	}
 
 	//请求头
-	for k, v := range a.DefaultHeader {
-		req.Header.Add(k, v)
+	if header != nil {
+		for k, v := range a.DefaultHeader {
+			if _, ok := header[k]; !ok {
+				header[k] = v
+			}
+		}
+	} else {
+		header = a.DefaultHeader
 	}
+
 	for k, v := range header {
 		req.Header.Add(k, fmt.Sprint(v))
 	}
