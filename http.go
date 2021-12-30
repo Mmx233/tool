@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+type GenTransport struct {
+	Timeout   time.Duration
+	LocalAddr net.Addr
+}
+
 type FullRequest struct {
 	Type              string
 	Url               string
@@ -24,8 +29,7 @@ type FullRequest struct {
 	Cookie            map[string]string
 	Redirect          bool
 	RedirectCookieJar bool
-	Timeout           time.Duration
-	LocalAddr         net.Addr
+	Transport         *http.Transport
 }
 
 type GetRequest struct {
@@ -35,8 +39,7 @@ type GetRequest struct {
 	Cookie            map[string]string
 	Redirect          bool
 	RedirectCookieJar bool
-	Timeout           time.Duration
-	LocalAddr         net.Addr
+	Transport         *http.Transport
 }
 
 type PostRequest struct {
@@ -47,17 +50,23 @@ type PostRequest struct {
 	Cookie            map[string]string
 	Redirect          bool
 	RedirectCookieJar bool
-	Timeout           time.Duration
-	LocalAddr         net.Addr
+	Transport         *http.Transport
 }
 
 type httP struct { //HTTP操作工具包
-	DefaultHeader map[string]interface{} //默认爬虫header
+	DefaultHeader    map[string]interface{} //默认爬虫header
+	DefaultTransport *http.Transport
 }
 
 var HTTP = httP{
 	DefaultHeader: map[string]interface{}{
 		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+	},
+	DefaultTransport: &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: time.Second * 30,
+		}).DialContext,
+		TLSHandshakeTimeout: time.Second * 30,
 	},
 }
 
@@ -73,6 +82,16 @@ func (*httP) fillFullReq(Type string, s interface{}) *FullRequest {
 		v2.FieldByName(t.Field(i).Name).Set(v.Field(i))
 	}
 	return &r
+}
+
+func (a *httP) GenTransport(r *GenTransport) *http.Transport {
+	return &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   r.Timeout,
+			LocalAddr: r.LocalAddr,
+		}).DialContext,
+		TLSHandshakeTimeout: r.Timeout,
+	}
 }
 
 // GenRequest 生成请求 底层函数
@@ -147,17 +166,11 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 		return nil, nil, e
 	}
 
-	if r.Timeout == 0 {
-		r.Timeout = 30 * time.Second
+	if r.Transport == nil {
+		r.Transport = a.DefaultTransport
 	}
 	var client = &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   r.Timeout,
-				LocalAddr: r.LocalAddr,
-			}).DialContext,
-			TLSHandshakeTimeout: r.Timeout,
-		},
+		Transport: r.Transport,
 	}
 
 	if !r.Redirect {
