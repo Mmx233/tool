@@ -100,16 +100,23 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	//表单
 	var form string
 	if body != nil {
+		v := reflect.ValueOf(body)
 		if _, ok := header["Content-Type"]; !ok {
 			if header == nil {
 				header = make(map[string]interface{}, 1)
 			}
-			header["Content-Type"] = "application/json; charset=utf-8"
+			switch v.Kind() {
+			case reflect.Struct:
+				header["Content-Type"] = "application/json; charset=utf-8"
+			case reflect.Map:
+				header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+			default:
+				return nil, errors.New("tool http: cannot encode body")
+			}
 		}
 		switch {
 		case strings.Contains(header["Content-Type"].(string), "x-www-form-urlencoded"):
 			var data = make(url2.Values)
-			v := reflect.ValueOf(body)
 			switch v.Kind() {
 			case reflect.Map:
 				for _, key := range v.MapKeys() {
