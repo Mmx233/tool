@@ -104,7 +104,7 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 			if header == nil {
 				header = make(map[string]interface{}, 1)
 			}
-			header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+			header["Content-Type"] = "application/json; charset=utf-8"
 		}
 		switch {
 		case strings.Contains(header["Content-Type"].(string), "x-www-form-urlencoded"):
@@ -114,11 +114,6 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 			case reflect.Map:
 				for _, key := range v.MapKeys() {
 					data[fmt.Sprint(key.Interface())] = []string{fmt.Sprint(v.MapIndex(key).Interface())}
-				}
-			case reflect.Struct:
-				t := v.Type()
-				for i := 0; i < v.NumField(); i++ {
-					data[t.Field(i).Name] = []string{fmt.Sprint(v.Field(i).Interface())}
 				}
 			default:
 				return nil, errors.New("tool http: cannot encode body")
