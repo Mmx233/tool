@@ -2,6 +2,7 @@ package tool
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io"
@@ -25,7 +26,7 @@ type FullRequest struct {
 	Url               string
 	Header            map[string]interface{}
 	Query             map[string]interface{}
-	Body              map[string]interface{}
+	Body              interface{}
 	Cookie            map[string]string
 	Redirect          bool
 	RedirectCookieJar bool
@@ -46,7 +47,7 @@ type PostRequest struct {
 	Url               string
 	Header            map[string]interface{}
 	Query             map[string]interface{}
-	Body              map[string]interface{}
+	Body              interface{}
 	Cookie            map[string]string
 	Redirect          bool
 	RedirectCookieJar bool
@@ -95,7 +96,7 @@ func (a *httP) GenTransport(r *GenTransport) *http.Transport {
 }
 
 // GenRequest 生成请求 底层函数
-func (a *httP) GenRequest(Type string, url string, header map[string]interface{}, query map[string]interface{}, body map[string]interface{}, cookies map[string]string) (*http.Request, error) {
+func (a *httP) GenRequest(Type string, url string, header map[string]interface{}, query map[string]interface{}, body interface{}, cookies map[string]string) (*http.Request, error) {
 	//表单
 	var form string
 	if body != nil {
@@ -108,8 +109,19 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 		switch {
 		case strings.Contains(header["Content-Type"].(string), "x-www-form-urlencoded"):
 			var data = make(url2.Values)
-			for k, v := range body {
-				data[k] = []string{fmt.Sprint(v)}
+			v := reflect.ValueOf(body)
+			switch v.Kind() {
+			case reflect.Map:
+				for _, key := range v.MapKeys() {
+					data[fmt.Sprint(key.Interface())] = []string{fmt.Sprint(v.MapIndex(key).Interface())}
+				}
+			case reflect.Struct:
+				t := v.Type()
+				for i := 0; i < v.NumField(); i++ {
+					data[t.Field(i).Name] = []string{fmt.Sprint(v.Field(i).Interface())}
+				}
+			default:
+				return nil, errors.New("tool http: cannot encode body")
 			}
 			form = data.Encode()
 		case strings.Contains(header["Content-Type"].(string), "json"):
