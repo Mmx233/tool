@@ -17,8 +17,9 @@ import (
 )
 
 type GenTransport struct {
-	Timeout   time.Duration
-	LocalAddr net.Addr
+	Timeout         time.Duration
+	LocalAddr       net.Addr
+	IdleConnTimeout time.Duration
 }
 
 type FullRequest struct {
@@ -92,6 +93,7 @@ func (a *httP) GenTransport(r *GenTransport) *http.Transport {
 			LocalAddr: r.LocalAddr,
 		}).DialContext,
 		TLSHandshakeTimeout: r.Timeout,
+		IdleConnTimeout:     r.IdleConnTimeout,
 	}
 }
 
