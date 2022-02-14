@@ -176,10 +176,10 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 }
 
 // DefaultReader 执行请求获得io reader的默认流程
-func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error) {
+func (a *httP) DefaultReader(r *FullRequest) (*http.Response, error) {
 	req, e := a.GenRequest(r.Type, r.Url, r.Header, r.Query, r.Body, r.Cookie)
 	if e != nil {
-		return nil, nil, e
+		return nil, e
 	}
 
 	if r.Transport == nil {
@@ -196,7 +196,7 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 	} else if r.RedirectCookieJar {
 		jar, e := cookiejar.New(nil)
 		if e != nil {
-			return nil, nil, e
+			return nil, e
 		}
 		client.Jar = jar
 		if r.Cookie != nil {
@@ -212,19 +212,19 @@ func (a *httP) DefaultReader(r *FullRequest) (http.Header, io.ReadCloser, error)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return resp.Header, resp.Body, nil
+	return resp, nil
 }
 
 // PostReader 执行POST请求，获得io reader
-func (a *httP) PostReader(r *PostRequest) (http.Header, io.ReadCloser, error) {
+func (a *httP) PostReader(r *PostRequest) (*http.Response, error) {
 	return a.DefaultReader(a.fillFullReq("POST", r))
 }
 
 // GetReader 执行GET请求，获得io reader
-func (a *httP) GetReader(r *GetRequest) (http.Header, io.ReadCloser, error) {
+func (a *httP) GetReader(r *GetRequest) (*http.Response, error) {
 	return a.DefaultReader(a.fillFullReq("GET", r))
 }
 
@@ -247,68 +247,68 @@ func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, erro
 }
 
 // Post 表单请求快捷方式
-func (a *httP) Post(r *PostRequest) (http.Header, map[string]interface{}, error) {
-	d, b, e := a.PostReader(r)
+func (a *httP) Post(r *PostRequest) (*http.Response, map[string]interface{}, error) {
+	res, e := a.PostReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.DecodeResBodyToMap(b)
-	return d, c, nil
+	c, e := a.DecodeResBodyToMap(res.Body)
+	return res, c, nil
 }
 
 // Get 表单请求快捷方式
-func (a *httP) Get(r *GetRequest) (http.Header, map[string]interface{}, error) {
-	d, b, e := a.GetReader(r)
+func (a *httP) Get(r *GetRequest) (*http.Response, map[string]interface{}, error) {
+	res, e := a.GetReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.DecodeResBodyToMap(b)
-	return d, c, nil
+	c, e := a.DecodeResBodyToMap(res.Body)
+	return res, c, nil
 }
 
-func (a *httP) PostBytes(r *PostRequest) (http.Header, []byte, error) {
-	d, b, e := a.PostReader(r)
+func (a *httP) PostBytes(r *PostRequest) (*http.Response, []byte, error) {
+	res, e := a.PostReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.ReadResBodyToByte(b)
-	return d, c, nil
+	c, e := a.ReadResBodyToByte(res.Body)
+	return res, c, nil
 }
 
-func (a *httP) GetBytes(r *GetRequest) (http.Header, []byte, error) {
-	d, b, e := a.GetReader(r)
+func (a *httP) GetBytes(r *GetRequest) (*http.Response, []byte, error) {
+	res, e := a.GetReader(r)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.ReadResBodyToByte(b)
-	return d, c, nil
+	c, e := a.ReadResBodyToByte(res.Body)
+	return res, c, nil
 }
 
-func (a *httP) PostString(r *PostRequest) (http.Header, string, error) {
-	d, b, e := a.PostReader(r)
+func (a *httP) PostString(r *PostRequest) (*http.Response, string, error) {
+	res, e := a.PostReader(r)
 	if e != nil {
 		return nil, "", e
 	}
-	c, e := a.ReadResBodyToString(b)
-	return d, c, nil
+	c, e := a.ReadResBodyToString(res.Body)
+	return res, c, nil
 }
 
-func (a *httP) GetString(r *GetRequest) (http.Header, string, error) {
-	d, b, e := a.GetReader(r)
+func (a *httP) GetString(r *GetRequest) (*http.Response, string, error) {
+	res, e := a.GetReader(r)
 	if e != nil {
 		return nil, "", e
 	}
-	c, e := a.ReadResBodyToString(b)
-	return d, c, nil
+	c, e := a.ReadResBodyToString(res.Body)
+	return res, c, nil
 }
 
 func (a httP) DefaultGoquery(r *FullRequest) (*goquery.Document, error) {
-	_, resp, e := a.DefaultReader(r)
+	res, e := a.DefaultReader(r)
 	if e != nil {
 		return nil, e
 	}
-	d, e := goquery.NewDocumentFromReader(resp)
-	_ = resp.Close()
+	d, e := goquery.NewDocumentFromReader(res.Body)
+	_ = res.Body.Close()
 	return d, e
 }
 
