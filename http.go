@@ -243,19 +243,7 @@ func (a *httP) ReadResBodyToString(i io.ReadCloser) (string, error) {
 // DecodeResBodyToMap 读取io reader中返回的json写入map
 func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, error) {
 	var t map[string]interface{}
-
-	//读取
-	data, err := a.ReadResBodyToByte(i)
-	if err != nil {
-		return nil, err
-	}
-
-	//解码
-	if err = json.Unmarshal(data, &t); err != nil {
-		return nil, err
-	}
-
-	return t, nil
+	return t, json.NewDecoder(i).Decode(&t)
 }
 
 // Post 表单请求快捷方式

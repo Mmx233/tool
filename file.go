@@ -24,28 +24,38 @@ func (a *file) Exists(path string) bool {
 	return true
 }
 
-func (a *file) Read(path string) ([]byte, error) {
+func (a *file) ReadAll(path string) ([]byte, error) {
 	return ioutil.ReadFile(path)
 }
 
 func (a *file) ReadJson(path string, receiver interface{}) error {
-	data, err := a.Read(path)
-	if err != nil {
-		return err
+	f, e := os.Open(path)
+	if e != nil {
+		return e
 	}
-	return json.Unmarshal(data, receiver)
+	defer f.Close()
+	return json.NewDecoder(f).Decode(receiver)
 }
 
-func (a *file) Write(path string, data []byte) error {
+func (a *file) WriteAll(path string, data []byte) error {
 	return ioutil.WriteFile(path, data, 700)
 }
 
-func (a *file) WriteJson(path string, receiver interface{}) error {
+func (a file) WriteJson(path string, data interface{}) error {
+	f, e := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 700)
+	if e != nil {
+		return e
+	}
+	defer f.Close()
+	return json.NewEncoder(f).Encode(data)
+}
+
+func (a *file) WriteJsonIntend(path string, receiver interface{}) error {
 	data, err := json.MarshalIndent(receiver, "", " ")
 	if err != nil {
 		return err
 	}
-	return a.Write(path, data)
+	return a.WriteAll(path, data)
 }
 
 func (a *file) Remove(path string) error {
@@ -76,7 +86,7 @@ func (a *file) Add(path string, c string, perm os.FileMode) error {
 	return w.Flush()
 }
 
-func (*file) GetRootPath() (string, error) {
+func (*file) GetRuntimePath() (string, error) {
 	t, err := os.Executable()
 	if err != nil {
 		return "", err
