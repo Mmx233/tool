@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,9 +18,10 @@ import (
 )
 
 type GenTransport struct {
-	Timeout         time.Duration
-	LocalAddr       net.Addr
-	IdleConnTimeout time.Duration
+	Timeout           time.Duration
+	LocalAddr         net.Addr
+	IdleConnTimeout   time.Duration
+	SkipSslCertVerify bool
 }
 
 type FullRequest struct {
@@ -94,6 +96,7 @@ func (a *httP) GenTransport(r *GenTransport) *http.Transport {
 		}).DialContext,
 		TLSHandshakeTimeout: r.Timeout,
 		IdleConnTimeout:     r.IdleConnTimeout,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: r.SkipSslCertVerify},
 	}
 }
 
