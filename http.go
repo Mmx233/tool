@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
 	"net"
@@ -303,22 +302,4 @@ func (a *httP) GetString(r *GetRequest) (*http.Response, string, error) {
 	}
 	c, e := a.ReadResBodyToString(res.Body)
 	return res, c, nil
-}
-
-func (a httP) DefaultGoquery(r *FullRequest) (*goquery.Document, error) {
-	res, e := a.DefaultReader(r)
-	if e != nil {
-		return nil, e
-	}
-	d, e := goquery.NewDocumentFromReader(res.Body)
-	_ = res.Body.Close()
-	return d, e
-}
-
-func (a httP) GetGoquery(r *GetRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery(a.fillFullReq("GET", r))
-}
-
-func (a httP) PostGoquery(r *PostRequest) (*goquery.Document, error) {
-	return a.DefaultGoquery(a.fillFullReq("POST", r))
 }
