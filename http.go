@@ -30,7 +30,7 @@ type FullRequest struct {
 	Query             map[string]interface{}
 	Body              interface{}
 	Cookie            map[string]string
-	Redirect          bool
+	NoRedirect        bool
 	RedirectCookieJar bool
 	Transport         *http.Transport
 }
@@ -40,7 +40,7 @@ type GetRequest struct {
 	Header            map[string]interface{}
 	Query             map[string]interface{}
 	Cookie            map[string]string
-	Redirect          bool
+	NoRedirect        bool
 	RedirectCookieJar bool
 	Transport         *http.Transport
 }
@@ -51,7 +51,7 @@ type PostRequest struct {
 	Query             map[string]interface{}
 	Body              interface{}
 	Cookie            map[string]string
-	Redirect          bool
+	NoRedirect        bool
 	RedirectCookieJar bool
 	Transport         *http.Transport
 }
@@ -191,7 +191,7 @@ func (a *httP) Default(r *FullRequest) (*http.Response, error) {
 		Transport: r.Transport,
 	}
 
-	if !r.Redirect {
+	if r.NoRedirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
