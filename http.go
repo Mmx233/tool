@@ -177,8 +177,8 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	return req, nil
 }
 
-// DefaultReader 执行请求获得io reader的默认流程
-func (a *httP) DefaultReader(r *FullRequest) (*http.Response, error) {
+// Default 执行请求获得http 响应的默认流程
+func (a *httP) Default(r *FullRequest) (*http.Response, error) {
 	req, e := a.GenRequest(r.Type, r.Url, r.Header, r.Query, r.Body, r.Cookie)
 	if e != nil {
 		return nil, e
@@ -220,14 +220,14 @@ func (a *httP) DefaultReader(r *FullRequest) (*http.Response, error) {
 	return resp, nil
 }
 
-// PostReader 执行POST请求，获得io reader
-func (a *httP) PostReader(r *PostRequest) (*http.Response, error) {
-	return a.DefaultReader(a.fillFullReq("POST", r))
+// PostRes 执行POST请求，获得http 响应
+func (a *httP) PostRes(r *PostRequest) (*http.Response, error) {
+	return a.Default(a.fillFullReq("POST", r))
 }
 
-// GetReader 执行GET请求，获得io reader
-func (a *httP) GetReader(r *GetRequest) (*http.Response, error) {
-	return a.DefaultReader(a.fillFullReq("GET", r))
+// GetRes 执行GET请求，获得http 响应
+func (a *httP) GetRes(r *GetRequest) (*http.Response, error) {
+	return a.Default(a.fillFullReq("GET", r))
 }
 
 func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
@@ -250,7 +250,7 @@ func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, erro
 
 // Post 表单请求快捷方式
 func (a *httP) Post(r *PostRequest) (*http.Response, map[string]interface{}, error) {
-	res, e := a.PostReader(r)
+	res, e := a.PostRes(r)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -260,7 +260,7 @@ func (a *httP) Post(r *PostRequest) (*http.Response, map[string]interface{}, err
 
 // Get 表单请求快捷方式
 func (a *httP) Get(r *GetRequest) (*http.Response, map[string]interface{}, error) {
-	res, e := a.GetReader(r)
+	res, e := a.GetRes(r)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -269,7 +269,7 @@ func (a *httP) Get(r *GetRequest) (*http.Response, map[string]interface{}, error
 }
 
 func (a *httP) PostBytes(r *PostRequest) (*http.Response, []byte, error) {
-	res, e := a.PostReader(r)
+	res, e := a.PostRes(r)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -278,7 +278,7 @@ func (a *httP) PostBytes(r *PostRequest) (*http.Response, []byte, error) {
 }
 
 func (a *httP) GetBytes(r *GetRequest) (*http.Response, []byte, error) {
-	res, e := a.GetReader(r)
+	res, e := a.GetRes(r)
 	if e != nil {
 		return nil, nil, e
 	}
@@ -287,7 +287,7 @@ func (a *httP) GetBytes(r *GetRequest) (*http.Response, []byte, error) {
 }
 
 func (a *httP) PostString(r *PostRequest) (*http.Response, string, error) {
-	res, e := a.PostReader(r)
+	res, e := a.PostRes(r)
 	if e != nil {
 		return nil, "", e
 	}
@@ -296,7 +296,7 @@ func (a *httP) PostString(r *PostRequest) (*http.Response, string, error) {
 }
 
 func (a *httP) GetString(r *GetRequest) (*http.Response, string, error) {
-	res, e := a.GetReader(r)
+	res, e := a.GetRes(r)
 	if e != nil {
 		return nil, "", e
 	}
