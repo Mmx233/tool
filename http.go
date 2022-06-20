@@ -236,3 +236,24 @@ func (a *Http) GetString(opt *DoHttpReq) (*http.Response, string, error) {
 	c, e := a.ReadResBodyToString(res.Body)
 	return res, c, e
 }
+
+type HttpRequest struct {
+	c   *Http
+	Req *http.Request
+}
+
+func (a *Http) PrepareRequest(Type string, opt *DoHttpReq) (*HttpRequest, error) {
+	req, e := a.GenReq(Type, opt)
+	if e != nil {
+		return nil, e
+	}
+
+	return &HttpRequest{
+		c:   a,
+		Req: req,
+	}, nil
+}
+
+func (a *HttpRequest) Do() (*http.Response, error) {
+	return a.c.Client.Do(a.Req)
+}
