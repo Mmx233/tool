@@ -1,6 +1,7 @@
 package tool
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -16,110 +17,91 @@ import (
 	"time"
 )
 
-type GenTransport struct {
+type HttpTransportOptions struct {
 	Timeout           time.Duration
 	LocalAddr         net.Addr
 	IdleConnTimeout   time.Duration
 	SkipSslCertVerify bool
 }
 
-type FullRequest struct {
-	Type              string
-	Url               string
-	Header            map[string]interface{}
-	Query             map[string]interface{}
-	Body              interface{}
-	Cookie            map[string]string
-	NoRedirect        bool
-	RedirectCookieJar bool
-	Transport         *http.Transport
-}
-
-type GetRequest struct {
-	Url               string
-	Header            map[string]interface{}
-	Query             map[string]interface{}
-	Cookie            map[string]string
-	NoRedirect        bool
-	RedirectCookieJar bool
-	Transport         *http.Transport
-}
-
-type PostRequest struct {
-	Url               string
-	Header            map[string]interface{}
-	Query             map[string]interface{}
-	Body              interface{}
-	Cookie            map[string]string
-	NoRedirect        bool
-	RedirectCookieJar bool
-	Transport         *http.Transport
-}
-
-type httP struct { //HTTP操作工具包
-	DefaultHeader    map[string]interface{} //默认爬虫header
-	DefaultTransport *http.Transport
-}
-
-var HTTP = httP{
-	DefaultHeader: map[string]interface{}{
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
-	},
-	DefaultTransport: &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout: time.Second * 30,
-		}).DialContext,
-		TLSHandshakeTimeout: time.Second * 30,
-	},
-}
-
-// 接收指针
-func (*httP) fillFullReq(Type string, s interface{}) *FullRequest {
-	var r = FullRequest{
-		Type: Type,
-	}
-	v2 := reflect.ValueOf(&r).Elem()
-	t := reflect.TypeOf(s).Elem()
-	v := reflect.ValueOf(s).Elem()
-	for i := 0; i < v.NumField(); i++ {
-		v2.FieldByName(t.Field(i).Name).Set(v.Field(i))
-	}
-	return &r
-}
-
-func (a *httP) GenTransport(r *GenTransport) *http.Transport {
+func GenHttpTransport(opt *HttpTransportOptions) *http.Transport {
 	return &http.Transport{
 		DialContext: (&net.Dialer{
-			Timeout:   r.Timeout,
-			LocalAddr: r.LocalAddr,
+			Timeout:   opt.Timeout,
+			LocalAddr: opt.LocalAddr,
 		}).DialContext,
-		TLSHandshakeTimeout: r.Timeout,
-		IdleConnTimeout:     r.IdleConnTimeout,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: r.SkipSslCertVerify},
+		TLSHandshakeTimeout: opt.Timeout,
+		IdleConnTimeout:     opt.IdleConnTimeout,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: opt.SkipSslCertVerify},
 	}
 }
 
-// GenRequest 生成请求 底层函数
-func (a *httP) GenRequest(Type string, url string, header map[string]interface{}, query map[string]interface{}, body interface{}, cookies map[string]string) (*http.Request, error) {
+type HttpClientOptions struct {
+	Transport *http.Transport
+	//禁止跟随重定向
+	NoRedirect bool
+	//启用 cookiejar
+	RedirectCookieJar bool
+	//超时时间
+	Timeout time.Duration
+}
+
+func GenHttpClient(opt *HttpClientOptions) *http.Client {
+	c := &http.Client{
+		Transport: opt.Transport,
+		Timeout:   opt.Timeout,
+	}
+
+	if opt.NoRedirect {
+		c.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	} else if opt.RedirectCookieJar {
+		jar, _ := cookiejar.New(nil)
+		c.Jar = jar
+	}
+
+	return c
+}
+
+func NewHttpTool(c *http.Client) *Http {
+	return &Http{
+		Client: c,
+	}
+}
+
+type Http struct {
+	Client *http.Client
+}
+
+type DoHttpReq struct {
+	Url    string
+	Header map[string]interface{}
+	Query  map[string]interface{}
+	Body   interface{}
+	Cookie map[string]string
+}
+
+func (a *Http) GenReq(Type string, opt *DoHttpReq) (*http.Request, error) {
 	//表单
-	var form string
-	if body != nil {
-		v := reflect.ValueOf(body)
-		if _, ok := header["Content-Type"]; !ok {
-			if header == nil {
-				header = make(map[string]interface{}, 1)
+	var form bytes.Buffer
+	if opt.Body != nil {
+		v := reflect.ValueOf(opt.Body)
+		if _, ok := opt.Header["Content-Type"]; !ok {
+			if opt.Header == nil {
+				opt.Header = make(map[string]interface{}, 1)
 			}
 			switch v.Kind() {
 			case reflect.Struct:
-				header["Content-Type"] = "application/json; charset=utf-8"
+				opt.Header["Content-Type"] = "application/json; charset=utf-8"
 			case reflect.Map:
-				header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+				opt.Header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
 			default:
-				return nil, errors.New("tool http: cannot encode body")
+				return nil, errors.New("tool http: unknown body type")
 			}
 		}
 		switch {
-		case strings.Contains(header["Content-Type"].(string), "x-www-form-urlencoded"):
+		case strings.Contains(opt.Header["Content-Type"].(string), "x-www-form-urlencoded"):
 			var data = make(url2.Values)
 			switch v.Kind() {
 			case reflect.Map:
@@ -129,45 +111,34 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 			default:
 				return nil, errors.New("tool http: cannot encode body")
 			}
-			form = data.Encode()
-		case strings.Contains(header["Content-Type"].(string), "json"):
-			s, e := json.Marshal(body)
+			form.Write([]byte(data.Encode()))
+		case strings.Contains(opt.Header["Content-Type"].(string), "json"):
+			s, e := json.Marshal(opt.Body)
 			if e != nil {
 				return nil, e
 			}
-			form = string(s)
+			form.Write(s)
 		}
 	}
 
-	req, err := http.NewRequest(Type, url, strings.NewReader(form))
+	req, err := http.NewRequest(Type, opt.Url, &form)
 	if err != nil {
 		return nil, err
 	}
 
-	//请求头
-	if header != nil {
-		for k, v := range a.DefaultHeader {
-			if _, ok := header[k]; !ok {
-				header[k] = v
-			}
-		}
-	} else {
-		header = a.DefaultHeader
-	}
-
-	for k, v := range header {
+	for k, v := range opt.Header {
 		req.Header.Add(k, fmt.Sprint(v))
 	}
 
 	//url参数
 	q := req.URL.Query()
-	for k, v := range query {
+	for k, v := range opt.Query {
 		q.Add(k, fmt.Sprint(v))
 	}
 	req.URL.RawQuery = q.Encode()
 
 	//cookie
-	for k, v := range cookies {
+	for k, v := range opt.Cookie {
 		req.AddCookie(&http.Cookie{
 			Name:  k,
 			Value: v,
@@ -177,129 +148,91 @@ func (a *httP) GenRequest(Type string, url string, header map[string]interface{}
 	return req, nil
 }
 
-// Default 执行请求获得http 响应的默认流程
-func (a *httP) Default(r *FullRequest) (*http.Response, error) {
-	req, e := a.GenRequest(r.Type, r.Url, r.Header, r.Query, r.Body, r.Cookie)
+func (a *Http) Request(Type string, opt *DoHttpReq) (*http.Response, error) {
+	req, e := a.GenReq(Type, opt)
 	if e != nil {
 		return nil, e
 	}
 
-	if r.Transport == nil {
-		r.Transport = a.DefaultTransport
-	}
-	var client = &http.Client{
-		Transport: r.Transport,
-	}
-
-	if r.NoRedirect {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
-	} else if r.RedirectCookieJar {
-		jar, e := cookiejar.New(nil)
-		if e != nil {
-			return nil, e
-		}
-		client.Jar = jar
-		if r.Cookie != nil {
-			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				u, _ := url2.Parse(r.Url)
-				for _, v := range jar.Cookies(u) {
-					r.Cookie[v.Name] = v.Value
-				}
-				return nil
-			}
-		}
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return a.Client.Do(req)
 }
 
-// PostRes 执行POST请求，获得http 响应
-func (a *httP) PostRes(r *PostRequest) (*http.Response, error) {
-	return a.Default(a.fillFullReq("POST", r))
+func (a *Http) PostRequest(opt *DoHttpReq) (*http.Response, error) {
+	return a.Request("POST", opt)
 }
 
-// GetRes 执行GET请求，获得http 响应
-func (a *httP) GetRes(r *GetRequest) (*http.Response, error) {
-	return a.Default(a.fillFullReq("GET", r))
+func (a *Http) GetRequest(opt *DoHttpReq) (*http.Response, error) {
+	return a.Request("GET", opt)
 }
 
-func (*httP) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
-	defer func() {
-		_ = i.Close()
-	}()
+func (*Http) ReadResBodyToByte(i io.ReadCloser) ([]byte, error) {
+	defer i.Close()
 	return ioutil.ReadAll(i)
 }
 
-func (a *httP) ReadResBodyToString(i io.ReadCloser) (string, error) {
+func (a *Http) ReadResBodyToString(i io.ReadCloser) (string, error) {
 	d, e := a.ReadResBodyToByte(i)
 	return string(d), e
 }
 
-// DecodeResBodyToMap 读取io reader中返回的json写入map
-func (a *httP) DecodeResBodyToMap(i io.ReadCloser) (map[string]interface{}, error) {
+func (a *Http) UnMarshalResBodyToMap(i io.ReadCloser) (map[string]interface{}, error) {
+	defer i.Close()
 	var t map[string]interface{}
 	return t, json.NewDecoder(i).Decode(&t)
 }
 
 // Post 表单请求快捷方式
-func (a *httP) Post(r *PostRequest) (*http.Response, map[string]interface{}, error) {
-	res, e := a.PostRes(r)
+func (a *Http) Post(opt *DoHttpReq) (*http.Response, map[string]interface{}, error) {
+	res, e := a.PostRequest(opt)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.DecodeResBodyToMap(res.Body)
-	return res, c, nil
+	c, e := a.UnMarshalResBodyToMap(res.Body)
+	return res, c, e
 }
 
 // Get 表单请求快捷方式
-func (a *httP) Get(r *GetRequest) (*http.Response, map[string]interface{}, error) {
-	res, e := a.GetRes(r)
+func (a *Http) Get(opt *DoHttpReq) (*http.Response, map[string]interface{}, error) {
+	res, e := a.GetRequest(opt)
 	if e != nil {
 		return nil, nil, e
 	}
-	c, e := a.DecodeResBodyToMap(res.Body)
-	return res, c, nil
+	c, e := a.UnMarshalResBodyToMap(res.Body)
+	return res, c, e
 }
 
-func (a *httP) PostBytes(r *PostRequest) (*http.Response, []byte, error) {
-	res, e := a.PostRes(r)
-	if e != nil {
-		return nil, nil, e
-	}
-	c, e := a.ReadResBodyToByte(res.Body)
-	return res, c, nil
-}
-
-func (a *httP) GetBytes(r *GetRequest) (*http.Response, []byte, error) {
-	res, e := a.GetRes(r)
+func (a *Http) PostBytes(opt *DoHttpReq) (*http.Response, []byte, error) {
+	res, e := a.PostRequest(opt)
 	if e != nil {
 		return nil, nil, e
 	}
 	c, e := a.ReadResBodyToByte(res.Body)
-	return res, c, nil
+	return res, c, e
 }
 
-func (a *httP) PostString(r *PostRequest) (*http.Response, string, error) {
-	res, e := a.PostRes(r)
+func (a *Http) GetBytes(opt *DoHttpReq) (*http.Response, []byte, error) {
+	res, e := a.GetRequest(opt)
+	if e != nil {
+		return nil, nil, e
+	}
+	c, e := a.ReadResBodyToByte(res.Body)
+	return res, c, e
+}
+
+func (a *Http) PostString(opt *DoHttpReq) (*http.Response, string, error) {
+	res, e := a.PostRequest(opt)
 	if e != nil {
 		return nil, "", e
 	}
 	c, e := a.ReadResBodyToString(res.Body)
-	return res, c, nil
+	return res, c, e
 }
 
-func (a *httP) GetString(r *GetRequest) (*http.Response, string, error) {
-	res, e := a.GetRes(r)
+func (a *Http) GetString(opt *DoHttpReq) (*http.Response, string, error) {
+	res, e := a.GetRequest(opt)
 	if e != nil {
 		return nil, "", e
 	}
 	c, e := a.ReadResBodyToString(res.Body)
-	return res, c, nil
+	return res, c, e
 }
