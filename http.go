@@ -84,44 +84,50 @@ type DoHttpReq struct {
 
 func (a *Http) GenReq(Type string, opt *DoHttpReq) (*http.Request, error) {
 	//表单
-	var form bytes.Buffer
+	var form io.Reader
 	if opt.Body != nil {
-		v := reflect.ValueOf(opt.Body)
-		if _, ok := opt.Header["Content-Type"]; !ok {
-			if opt.Header == nil {
-				opt.Header = make(map[string]interface{}, 1)
-			}
-			switch v.Kind() {
-			case reflect.Struct:
-				opt.Header["Content-Type"] = "application/json; charset=utf-8"
-			case reflect.Map:
-				opt.Header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
-			default:
-				return nil, errors.New("tool http: unknown body type")
-			}
-		}
-		switch {
-		case strings.Contains(opt.Header["Content-Type"].(string), "x-www-form-urlencoded"):
-			var data = make(url2.Values)
-			switch v.Kind() {
-			case reflect.Map:
-				for _, key := range v.MapKeys() {
-					data[fmt.Sprint(key.Interface())] = []string{fmt.Sprint(v.MapIndex(key).Interface())}
+		if i, ok := opt.Body.(io.Reader); ok {
+			form = i
+		} else {
+			var body bytes.Buffer
+			form = &body
+			v := reflect.ValueOf(opt.Body)
+			if _, ok := opt.Header["Content-Type"]; !ok {
+				if opt.Header == nil {
+					opt.Header = make(map[string]interface{}, 1)
 				}
-			default:
-				return nil, errors.New("tool http: cannot encode body")
+				switch v.Kind() {
+				case reflect.Struct:
+					opt.Header["Content-Type"] = "application/json; charset=utf-8"
+				case reflect.Map:
+					opt.Header["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+				default:
+					return nil, errors.New("tool http: unknown body type")
+				}
 			}
-			form.Write([]byte(data.Encode()))
-		case strings.Contains(opt.Header["Content-Type"].(string), "json"):
-			s, e := json.Marshal(opt.Body)
-			if e != nil {
-				return nil, e
+			switch {
+			case strings.Contains(opt.Header["Content-Type"].(string), "x-www-form-urlencoded"):
+				var data = make(url2.Values)
+				switch v.Kind() {
+				case reflect.Map:
+					for _, key := range v.MapKeys() {
+						data[fmt.Sprint(key.Interface())] = []string{fmt.Sprint(v.MapIndex(key).Interface())}
+					}
+				default:
+					return nil, errors.New("tool http: cannot encode body")
+				}
+				body.Write([]byte(data.Encode()))
+			case strings.Contains(opt.Header["Content-Type"].(string), "json"):
+				s, e := json.Marshal(opt.Body)
+				if e != nil {
+					return nil, e
+				}
+				body.Write(s)
 			}
-			form.Write(s)
 		}
 	}
 
-	req, err := http.NewRequest(Type, opt.Url, &form)
+	req, err := http.NewRequest(Type, opt.Url, form)
 	if err != nil {
 		return nil, err
 	}
