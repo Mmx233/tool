@@ -65,6 +65,9 @@ func GenHttpClient(opt *HttpClientOptions) *http.Client {
 }
 
 func NewHttpTool(c *http.Client) *Http {
+	if c == nil {
+		c = http.DefaultClient
+	}
 	return &Http{
 		Client: c,
 	}
