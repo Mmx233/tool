@@ -100,6 +100,8 @@ func (a *Http) GenReq(Type string, opt *DoHttpReq) (*http.Request, error) {
 					opt.Header = make(map[string]interface{}, 1)
 				}
 				switch v.Kind() {
+				case reflect.Ptr:
+					fallthrough
 				case reflect.Struct:
 					opt.Header["Content-Type"] = "application/json; charset=utf-8"
 				case reflect.Map:
