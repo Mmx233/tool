@@ -2,7 +2,6 @@ package tool
 
 import (
 	"math/rand"
-	"time"
 )
 
 type ranD struct{}
@@ -13,8 +12,6 @@ var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ12
 
 // Num [min,max]
 func (*ranD) Num(Min int, Max int) int {
-	rand.Seed(time.Now().UnixNano())
-	time.Sleep(time.Nanosecond)
 	return Min + rand.Intn(Max-Min+1)
 }
 
