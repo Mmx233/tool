@@ -9,7 +9,7 @@ type cookie struct{}
 var Cookie cookie
 
 // Decode 从header中解析cookie进map
-func (*cookie) Decode(a string, o map[string]string) map[string]string {
+func (cookie) Decode(a string, o map[string]string) map[string]string {
 	var t map[string]string
 	if o != nil {
 		t = o

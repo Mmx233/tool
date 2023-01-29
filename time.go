@@ -47,7 +47,7 @@ func (timE) ToString(t time.Duration, nt uint) string {
 	return s
 }
 
-func (*timE) IsToday(t time.Time) bool {
+func (timE) IsToday(t time.Time) bool {
 	now := time.Now()
 	ZeroToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	tomorrow := now.Add(time.Hour * 24)
