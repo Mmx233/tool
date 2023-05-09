@@ -2,23 +2,34 @@ package tool
 
 import (
 	"math/rand"
+	"unsafe"
 )
 
-type ranD struct{}
+const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
-var Rand ranD
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-
-// Num [min,max]
-func (ranD) Num(Min int, Max int) int {
+// RandNum [min,max]
+func RandNum(rand rand.Rand, Min int, Max int) int {
 	return Min + rand.Intn(Max-Min+1)
 }
 
-func (ranD) String(Len int) string {
-	b := make([]rune, Len)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+const (
+	letterIdBits = 6
+	letterIdMask = 1<<letterIdBits - 1
+	letterIdMax  = 63 / letterIdBits
+)
+
+func RandString(src rand.Source, Len int) string {
+	b := make([]byte, Len)
+	for i, cache, remain := Len-1, src.Int63(), letterIdMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdMax
+		}
+		if idx := int(cache & letterIdMask); idx < len(letters) {
+			b[i] = letters[idx]
+			i--
+		}
+		cache >>= letterIdBits
+		remain--
 	}
-	return string(b)
+	return *(*string)(unsafe.Pointer(&b))
 }
