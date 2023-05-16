@@ -8,7 +8,7 @@ import (
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
 // RandNum [min,max]
-func RandNum(rand rand.Rand, Min int, Max int) int {
+func RandNum(rand *rand.Rand, Min int, Max int) int {
 	return Min + rand.Intn(Max-Min+1)
 }
 
