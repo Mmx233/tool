@@ -31,7 +31,6 @@ func GenHttpTransport(opt *HttpTransportOptions) *http.Transport {
 			LocalAddr: opt.LocalAddr,
 		}).DialContext,
 		TLSHandshakeTimeout: opt.Timeout,
-		IdleConnTimeout:     opt.IdleConnTimeout,
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: opt.SkipSslCertVerify},
 	}
 }
