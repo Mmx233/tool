@@ -2,13 +2,11 @@ package tool
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/http/cookiejar"
 	url2 "net/url"
@@ -16,24 +14,6 @@ import (
 	"strings"
 	"time"
 )
-
-type HttpTransportOptions struct {
-	Timeout           time.Duration
-	LocalAddr         net.Addr
-	IdleConnTimeout   time.Duration
-	SkipSslCertVerify bool
-}
-
-func GenHttpTransport(opt *HttpTransportOptions) *http.Transport {
-	return &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   opt.Timeout,
-			LocalAddr: opt.LocalAddr,
-		}).DialContext,
-		TLSHandshakeTimeout: opt.Timeout,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: opt.SkipSslCertVerify},
-	}
-}
 
 type HttpClientOptions struct {
 	Transport *http.Transport
