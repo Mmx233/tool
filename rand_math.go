@@ -2,7 +2,6 @@ package tool
 
 import (
 	"math/rand"
-	"unsafe"
 )
 
 func RandMath(src rand.Source) RandMathNum {
@@ -40,7 +39,7 @@ type RandMathWithLetters struct {
 	letters string
 }
 
-func (r RandMathWithLetters) String(Len int) string {
+func (r RandMathWithLetters) Text(Len int) []byte {
 	b := make([]byte, Len)
 	for i, cache, remain := Len-1, r.source.Int63(), letterIdMax; i >= 0; {
 		if remain == 0 {
@@ -53,5 +52,5 @@ func (r RandMathWithLetters) String(Len int) string {
 		cache >>= letterIdBits
 		remain--
 	}
-	return unsafe.String(unsafe.SliceData(b), len(b))
+	return b
 }
