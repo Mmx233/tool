@@ -5,6 +5,15 @@ import (
 	"math/big"
 )
 
+// RandCryptoNum Num [min,max]
+func RandCryptoNum(min, max *big.Int) (*big.Int, error) {
+	val, err := rand.Int(rand.Reader, max.Sub(max, min).Add(max, big.NewInt(1)))
+	if err != nil {
+		return nil, err
+	}
+	return val.Add(min, val), nil
+}
+
 func RandCrypto(letters string) (r RandCryptoLetters) {
 	r.letters = letters
 	return
